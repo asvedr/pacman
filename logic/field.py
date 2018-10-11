@@ -22,7 +22,7 @@ class Field(object):
 				'p': Cell.PGhost,
 				'.': Cell.Dot}
 				
-	__slots__ = 'data', 'dot_count'
+	__slots__ = 'data', 'dot_count', 'width', 'height'
 				
 	def __init__(self, path):
 		
@@ -48,6 +48,8 @@ class Field(object):
 				if cell == Cell.Dot:
 					dot_count += 1
 		self.dot_count = dot_count
+		self.width = len(self.data)
+		self.height = len(self.data[0])
 
 	def __repr__(self):
 
