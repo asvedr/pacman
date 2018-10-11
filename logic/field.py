@@ -48,8 +48,8 @@ class Field(object):
 				if cell == Cell.Dot:
 					dot_count += 1
 		self.dot_count = dot_count
-		self.width = len(self.data)
-		self.height = len(self.data[0])
+		self.height = len(self.data)
+		self.width = len(self.data[0])
 
 	def __repr__(self):
 
