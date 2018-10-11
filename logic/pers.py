@@ -1,10 +1,18 @@
 
 EMPTY_VECTOR = (0, 0)
-PACMAN_SPEED = 0.3
-RED_SPEED = 0.5
+PACMAN_SPEED = 0.6
+RED_SPEED = 0.7
 BLUE_SPEED = 0.5
 PINK_SPEED = 0.5
 YELLO_SPEEd = 0.5
+
+RED = 'red'
+BLUE = 'blue'
+YELLO = 'yellow'
+PINK = 'pink'
+
+color_list = [RED, BLUE, YELLO, PINK]
+color_dict = {color_list[i]:i for i in range(len(color_list))}
 
 class Pers(object):
     
@@ -19,19 +27,19 @@ class Pers(object):
 
     @classmethod
     def red(cls, x, y):
-        return cls(x, y, red_algorithm, 'red')
+        return cls(x, y, red_algorithm, color_dict[RED])
 
     @classmethod
     def yello(cls, x, y):
-        return cls(x, y, yello_algorithm, 'yellow')
+        return cls(x, y, yello_algorithm, color_dict[YELLO])
 
     @classmethod
     def pink(cls, x, y):
-        return cls(x, y, pink_algorithm, 'pink')
+        return cls(x, y, pink_algorithm, color_dict[PINK])
 
     @classmethod
     def blue(cls, x, y):
-        return cls(x, y, blue_algorithm, 'blue')
+        return cls(x, y, blue_algorithm, color_dict[BLUE])
         
     def __init__(self, x, y, algorithm, color):
         self.x = x
