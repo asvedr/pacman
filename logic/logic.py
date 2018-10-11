@@ -5,7 +5,9 @@ from logic.pers import Pers
 
 class Logic(object):
 	
-	__slots__ = 'ghosts', 'pacman', 'field', 'user_vector', '_stop_flag'
+	__slots__ = ('ghosts', 'pacman', 'field',
+	             'user_vector', '_stop_flag',
+				 'previous_time', 'diff_time')
 	user_vector_none = (0, 0)
 	
 	@classmethod
@@ -42,10 +44,15 @@ class Logic(object):
 	def run(self):
 		threading.Thread(target=self._mainloop).start()
 
+	def tick(self):
+		now = time.time()
+		self.diff_time = now - self.previous_time
+		self.pacman.move(self)
+		self.user_vector = self.user_vector_none
+		for ghost in self.ghosts:
+			ghost.move(self)
+		time.sleep(1)
+
 	def _mainloop(self):
 		while not self._stop_flag:
-			self.pacman.move(self)
-			self.user_vector = self.user_vector_none
-			for ghost in self.ghosts:
-				ghost.move(self)
-			time.sleep(1)
+			self.tick()
