@@ -23,7 +23,7 @@ class Pers(object):
 
     @classmethod
     def yello(cls, x, y):
-        return cls(x, y, yello_algorithm, 'yello')
+        return cls(x, y, yello_algorithm, 'yellow')
 
     @classmethod
     def pink(cls, x, y):
@@ -65,7 +65,7 @@ def pacman_algorithm(pers, logic):
 def red_algorithm(pers, logic):
     # x = logic.pacman.x
     # y = logic.pacman.y
-    x = pers.x
+    x = pers.x + RED_SPEED * logic.diff_time
     y = pers.y
     pers.regular_move(logic, x, y)
     
