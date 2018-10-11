@@ -7,7 +7,8 @@ class Logic(object):
     
     __slots__ = ('ghosts', 'pacman', 'field',
                  'user_vector', '_stop_flag',
-                 'previous_time', 'diff_time')
+                 'previous_time', 'diff_time',
+                 'eated_dots')
     user_vector_none = (0, 0)
     
     @classmethod
@@ -20,6 +21,7 @@ class Logic(object):
         self.ghosts = []
         self.user_vector = self.user_vector_none
         self._stop_flag = False
+        self.eated_dots = []
         
         perses = {Cell.Pacman: Pers.pacman,
                   Cell.RGhost: Pers.red,
@@ -42,16 +44,17 @@ class Logic(object):
         self._stop_flag = True
     
     def run(self):
+        self.previous_time = time.time()
         threading.Thread(target=self._mainloop).start()
 
     def tick(self):
         now = time.time()
-        self.diff_time = now - self.previous_time
+        self.diff_time = 0.1#now - self.previous_time
         self.pacman.move(self)
         self.user_vector = self.user_vector_none
         for ghost in self.ghosts:
             ghost.move(self)
-        time.sleep(1)
+        time.sleep(0.1)
 
     def _mainloop(self):
         while not self._stop_flag:
