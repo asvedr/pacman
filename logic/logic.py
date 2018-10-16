@@ -1,4 +1,4 @@
-import threading
+import threading as th
 import time
 from logic.field import Field, Cell
 from logic.pers import Pers, color_list
@@ -77,14 +77,21 @@ class _LogicProcess(object):
     def pacman_killed(self):
         print('pacman killed')
 
-    def mainloop(self):
+    def mainloop_mp(self):
         while not self._stop_flag:
             self.tick()
 
+    def mainloop_th(self):
+        while not self._stop_flag:
+            self.tick()
+            time.sleep(0.001)
 
-def _build_n_run(field, namespace):
-    _LogicProcess(field, namespace).mainloop()
 
+def _build_n_run_mp(field, namespace):
+    _LogicProcess(field, namespace).mainloop_mp()
+
+def _build_n_run_th(field, namespace):
+    _LogicProcess(field, namespace).mainloop_th()
 
 class _State(object):
     
@@ -96,23 +103,51 @@ class _State(object):
         self.eated_dots = eated_dots
 
 
+class _NameSpacePlug:
+    def __init__(self):
+        self.ghosts = []
+        self.pacman = None
+        self.eated_dots = []
+        self.user_vector = None
+
+
 class Logic(object):
+
+    __mode = 'MP'
+
+    @classmethod
+    def set_thread_mode(cls):
+        cls.__mode = 'TH'
+
+    @classmethod
+    def set_multiprocess_mode(cls):
+        cls.__mode = 'MP'
 
     @classmethod
     def load_file(cls, path):
         field = Field(path)
-        namespace, manager = cls.prepare_manager()
-        proc = mp.Process(target=_build_n_run, args=(field, namespace))
-        return cls(manager, namespace, proc, field)
+        if cls.__mode == 'MP':
+            namespace, manager = cls._prepare_mp_manager()
+            proc = mp.Process(target=_build_n_run_mp, args=(field, namespace))
+            return cls(manager, namespace, proc, field)
+        else:
+            namespace = _NameSpacePlug()
+            proc = th.Thread(target=_build_n_run_th, args=(field, namespace))
+            return cls(None, namespace, proc, field)
     
     @classmethod
     def start_process(cls, field):
-        namespace, manager = cls.prepare_manager()
-        proc = mp.Process(target=_build_n_run, args=(field, namespace))
-        return cls(manager, namespace, proc, field)
+        if cls.__mode == 'MP':
+            namespace, manager = cls._prepare_mp_manager()
+            proc = mp.Process(target=_build_n_run_mp, args=(field, namespace))
+            return cls(manager, namespace, proc, field)
+        else:
+            namespace = _NameSpacePlug()
+            proc = th.Thread(target=_build_n_run_th, args=(field, namespace))
+            return cls(None, namespace, proc, field)
 
     @staticmethod
-    def prepare_manager():
+    def _prepare_mp_manager():
         manager = mp.Manager()
         ns = manager.Namespace()
         ns.ghosts = []
