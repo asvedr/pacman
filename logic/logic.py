@@ -3,6 +3,9 @@ import time
 from logic.field import Field, Cell
 from logic.pers import Pers, color_list
 import multiprocessing as mp
+from logic.logger import prepare_logger
+import logging
+
 
 SLEEP_TIME = 0.1
 
@@ -11,7 +14,8 @@ class _LogicProcess(object):
     __slots__ = ('ghosts', 'pacman', 'field',
                  'user_vector', '_stop_flag',
                  'previous_time', 'diff_time',
-                 'eated_dots', 'namespace')
+                 'eated_dots', 'namespace',
+                 'logger')
     user_vector_none = (0, 0)
 
     def __init__(self, field, namespace):
@@ -23,6 +27,8 @@ class _LogicProcess(object):
         self._stop_flag = False
         self.eated_dots = []
         self.previous_time = None
+        prepare_logger()
+        self.logger = logging.getLogger('pacman')
         
         perses = {Cell.Pacman: Pers.pacman,
                   Cell.RGhost: Pers.red,
@@ -41,7 +47,7 @@ class _LogicProcess(object):
                         self.ghosts.append(pers)
                     field.data[y][x] = Cell.Empty
 
-        self._mainloop()
+        # self._mainloop()
                     
     def stop(self):
         self._stop_flag = True
@@ -65,9 +71,16 @@ class _LogicProcess(object):
         ns.ghosts = ghosts_state
         time.sleep(SLEEP_TIME)
 
-    def _mainloop(self):
+    def pacman_killed(self):
+        print('pacman killed')
+
+    def mainloop(self):
         while not self._stop_flag:
             self.tick()
+
+
+def _build_n_run(field, namespace):
+    _LogicProcess(field, namespace).mainloop()
 
 
 class _State(object):
@@ -86,13 +99,13 @@ class Logic(object):
     def load_file(cls, path):
         field = Field(path)
         namespace, manager = cls.prepare_manager()
-        proc = mp.Process(target=_LogicProcess, args=(field, namespace))
+        proc = mp.Process(target=_build_n_run, args=(field, namespace))
         return cls(manager, namespace, proc, field)
     
     @classmethod
     def start_process(cls, field):
         namespace, manager = cls.prepare_manager()
-        proc = mp.Process(target=_LogicProcess, args=(field, namespace))
+        proc = mp.Process(target=_build_n_run, args=(field, namespace))
         return cls(manager, namespace, proc, field)
 
     @staticmethod
