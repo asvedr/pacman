@@ -60,6 +60,9 @@ class _LogicProcess(object):
         now = time.time()
         self.diff_time = now - self.previous_time if self.previous_time else 0
         self.previous_time = now
+        uv = self.namespace.user_vector
+        if uv is not None:
+            self.user_vector = uv
         self.pacman.move(self)
         self.user_vector = self.user_vector_none
         ghosts_state = []
@@ -115,6 +118,7 @@ class Logic(object):
         ns.ghosts = []
         ns.pacman = None
         ns.eated_dots = []
+        ns.user_vector = None
         return (ns, manager)
 
     def __init__(self, manager, namespace, proc, field):
@@ -131,3 +135,7 @@ class Logic(object):
         dots = ns.eated_dots
         ghosts = [(x,y,color_list[c]) for (x,y,c) in ghosts]
         return (pacman, ghosts, dots)
+
+    def move_pacman(self, vector):
+        print('MOVE PACMAN ', vector)
+        self.namespace.user_vector = vector
