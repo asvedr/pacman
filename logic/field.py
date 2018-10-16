@@ -1,6 +1,9 @@
 import enum
 from functools import reduce
+import os, sys
+path=os.path.abspath('d/Pacman_Repo/pacman/gui.py')  
 
+	 
 class Cell(enum.Enum):
     Empty = 0
     Wall = 1
@@ -10,6 +13,7 @@ class Cell(enum.Enum):
     PGhost = 5
     Pacman = 6
     Dot = 7
+
 
 class Field(object):
 
@@ -23,13 +27,14 @@ class Field(object):
                 '.': Cell.Dot}
                 
     __slots__ = 'data', 'dot_count', 'width', 'height'
-                
+       
+        
     def __init__(self, path):
         
         with open(path, 'rt') as handler:
             # creating
             lines = handler.read().split('\n')
-    
+     
         lines = list(filter(''.__ne__, lines))
         # checking
         assert len(lines) > 0
