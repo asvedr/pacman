@@ -5,8 +5,8 @@ import logging
 import enum
 
 EMPTY_VECTOR = (0, 0)
-PACMAN_SPEED = 0.2
-RED_SPEED = 0.3
+PACMAN_SPEED = 4 # 0.2
+RED_SPEED = 3 # 0.3
 BLUE_SPEED = 0.5
 PINK_SPEED = 0.5
 YELLO_SPEED = 0.5
@@ -38,12 +38,21 @@ class Mode(enum.Enum):
     PREY = 1
 
 
+def mul_p(vec, val):
+    return (vec[0] * val, vec[1] * val)
+
+
+def add_p(a, b):
+    return (a[0] + b[0], a[1] + b[1])
+
+
 class Pers(object):
     
     __slots__ = ('x', 'y', 'color', 'algorithm',
                  'speed', 'vector', 'is_pacman', 'logger',
                  'start_point', 'mode',
-                 'next_point', 'prev_dist')
+                 'next_point', 'prev_dist',
+                 'prev_point', 'ticks_got', 'ticks_total')
     
     @classmethod
     def pacman(cls, x, y):
@@ -80,16 +89,28 @@ class Pers(object):
         self.mode = Mode.HUNTER
         self.next_point = None
         self.prev_dist = None
+        self.prev_point = self.start_point
 
     def move(self, logic):
-        self.algorithm(self, logic)    
+        if self.ticks_got >= self.ticks_total:
+            point = self.next_point
+            self.algorithm(self, logic)
+            self.prev_point = point
+            self.vector = normal_vector(sub_p(self.next_point, point))
+            self.ticks_got = 0
+        self.ticks_got += 1
+        percent = float(self.ticks_got) / self.ticks_total
+        vec = add_p(self.next_point, mul_p(self.prev_point, -1))
+        point = add_p(mul_p(vec, percent), self.prev_point)
+        self.x, self.y = point
 
     def regular_move(self, logic, nx, ny):
-        field = logic.field
-        if not (0 <= nx < field.width or 0 <= ny < field.height):
-            raise Exception('out of map')
-        self.x = nx
-        self.y = ny
+        pass
+        # field = logic.field
+        # if not (0 <= nx < field.width or 0 <= ny < field.height):
+            # raise Exception('out of map')
+        # self.x = nx
+        # self.y = ny
 
     def can_turn(self, field):
         turns = turns_for[self.vector]
@@ -106,7 +127,8 @@ class Pers(object):
         return False
 
     def point(self):
-        return (round(self.x), round(self.y))
+        # return (round(self.x), round(self.y))
+        return self.next_point
 
     def is_on_cell_center(self):
         x = self.x
@@ -116,18 +138,21 @@ class Pers(object):
 
 def pacman_algorithm(pers, logic):
     has_turn = False
-    vector = logic.user_vector
+    vector = normal_vector(logic.user_vector)
+    point = pers.point()
     if vector != EMPTY_VECTOR and vector != pers.vector:
-        point = pers.point()
-        next_pt = (point[0] + vector[0], point[1] + vector[1])
-        if logic.field.data[next_pt[0]][next_pt[1]] != Cell.Wall:
+        next_pt = add_p(point, vector)
+        if logic.field.data[next_pt[1]][next_pt[0]] != Cell.Wall:
             pers.x = point[0]
             pers.y = point[1]
             has_turn = True
             pers.vector = logic.user_vector
-    x = pers.x + pers.vector[0] * PACMAN_SPEED
-    y = pers.y + pers.vector[1] * PACMAN_SPEED
-    pers.regular_move(logic, x, y)
+    next_pt = add_p(point, pers.vector)
+    if logic.field.data[next_pt[1]][next_pt[0]] != Cell.Wall:
+        pers.next_point = next_pt
+    # x = pers.x + pers.vector[0] * PACMAN_SPEED
+    # y = pers.y + pers.vector[1] * PACMAN_SPEED
+    # pers.regular_move(logic, x, y)
 
 
 def normal_vector(point):
@@ -137,7 +162,7 @@ def normal_vector(point):
         x = round(x / abs(x))
     if y != 0:
         y = round(y / abs(y))
-    return (x, y)
+    return (int(x), int(y))
 
 
 def dist(a, b):
@@ -145,53 +170,38 @@ def dist(a, b):
 
 
 def ghost_move(pers, logic, fin_point, speed):
-    color = pers.color
-    if pers.next_point is not None:
-        if dist((pers.x, pers.y), pers.next_point) > pers.prev_dist:
-            point = pers.point()
-            pers.x = point[0]
-            pers.y = point[1]
-    if pers.is_on_cell_center() and pers.can_turn(logic.field.data):
-        if pers.mode == Mode.HUNTER:
-            ghost_point = pers.point()
-            if pers.vector == EMPTY_VECTOR:
-                dont_use = []
-            else:
-                normal = normal_vector(pers.vector)
-                back_x = ghost_point[0] - normal[0]
-                back_y = ghost_point[1] - normal[1]
-                dont_use = [(back_x, back_y)]
-            path = find_path(logic.field.data, dont_use, fin_point, ghost_point)
-            if len(path) <= 1:
-                if ghost_point == fin_point:
-                    logic.pacman_killed()
-                return
-            next_cell = path[1]
-            vector = (next_cell[0] - ghost_point[0], next_cell[1] - ghost_point[1])
-            if pers.vector != vector:
-                pers.x = ghost_point[0]
-                pers.y = ghost_point[1]
-            pers.vector = normal_vector(vector)
-            pers.next_point = next_cell
+    if pers.mode == Mode.HUNTER:
+        ghost_point = pers.point()
+        if pers.vector == EMPTY_VECTOR:
+            dont_use = []
         else:
-            ways = []
             normal = normal_vector(pers.vector)
-            back_pt = None
-            x = pers.x
-            y = pers.y
-            if normal[0] != normal[1]: # Not null vector
-                back_pt = (x - normal, y - normal[1])
-            for px, py in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
-                next_pt = (x + px, y + py)
-                if next_pt != back_pt:
-                    ways.append(next_pt)
-            way = random.choice(ways)
-            pers.vector = normal_vector((way[0] - x, way[1] - y))
-    nx = pers.x + (pers.vector[0] * speed)
-    ny = pers.y + (pers.vector[1] * speed)
-    pers.regular_move(logic, nx, ny)
-    if pers.next_point is not None:
-        pers.prev_dist = dist(pers.next_point, (pers.x, pers.y))
+            dont_use = [sub_p(ghost_point, normal)]
+        path = find_path(logic.field.data, dont_use, fin_point, ghost_point)
+        if len(path) <= 1:
+            if ghost_point == fin_point:
+                logic.pacman_killed()
+            return
+        next_cell = path[1]
+        vector = (next_cell[0] - ghost_point[0], next_cell[1] - ghost_point[1])
+        if pers.vector != vector:
+            pers.x = ghost_point[0]
+            pers.y = ghost_point[1]
+        pers.next_point = next_cell
+    else:
+        ways = []
+        normal = normal_vector(pers.vector)
+        back_pt = None
+        x = pers.x
+        y = pers.y
+        if normal[0] != normal[1]: # Not null vector
+            back_pt = (x - normal, y - normal[1])
+        for px, py in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
+            next_pt = (x + px, y + py)
+            if next_pt != back_pt:
+                ways.append(next_pt)
+        way = random.choice(ways)
+        pers.next_point = way
 
 
 def red_algorithm(pers, logic):
