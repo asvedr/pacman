@@ -25,7 +25,7 @@ class _LogicProcess(object):
         self.ghosts = []
         self.user_vector = self.user_vector_none
         self._stop_flag = False
-        self.eated_dots = []
+        self.eated_dots = ''
         self.previous_time = None
         prepare_logger()
         self.logger = logging.getLogger('pacman')
@@ -47,7 +47,10 @@ class _LogicProcess(object):
                         self.ghosts.append(pers)
                     field.data[y][x] = Cell.Empty
 
-        # self._mainloop()
+    def eat_dot(self, x, y):
+        if self.field.data[y][x] == Cell.Dot:
+            self.field.data[y][x] = Cell.Empty
+            self.eated_dots = '%s (%s,%s)' % (self.eated_dots, x, y)
                     
     def stop(self):
         self._stop_flag = True
@@ -70,28 +73,23 @@ class _LogicProcess(object):
             ghost.move(self)
             ghosts_state.append((ghost.x, ghost.y, ghost.color))
         ns = self.namespace
+        self._stop_flag = ns.stop
         ns.pacman = (self.pacman.x, self.pacman.y)
         ns.ghosts = ghosts_state
+        ns.eated_dots = self.eated_dots
         time.sleep(SLEEP_TIME)
 
     def pacman_killed(self):
         print('pacman killed')
 
-    def mainloop_mp(self):
+    def mainloop(self):
         while not self._stop_flag:
             self.tick()
 
-    def mainloop_th(self):
-        while not self._stop_flag:
-            self.tick()
-            time.sleep(0.001)
 
+def _build_n_run(field, namespace):
+    _LogicProcess(field, namespace).mainloop()
 
-def _build_n_run_mp(field, namespace):
-    _LogicProcess(field, namespace).mainloop_mp()
-
-def _build_n_run_th(field, namespace):
-    _LogicProcess(field, namespace).mainloop_th()
 
 class _State(object):
     
@@ -107,8 +105,9 @@ class _NameSpacePlug:
     def __init__(self):
         self.ghosts = []
         self.pacman = None
-        self.eated_dots = []
+        self.eated_dots = ''
         self.user_vector = None
+        self.stop = False
 
 
 class Logic(object):
@@ -128,22 +127,22 @@ class Logic(object):
         field = Field(path)
         if cls.__mode == 'MP':
             namespace, manager = cls._prepare_mp_manager()
-            proc = mp.Process(target=_build_n_run_mp, args=(field, namespace))
+            proc = mp.Process(target=_build_n_run, args=(field, namespace))
             return cls(manager, namespace, proc, field)
         else:
             namespace = _NameSpacePlug()
-            proc = th.Thread(target=_build_n_run_th, args=(field, namespace))
+            proc = th.Thread(target=_build_n_run, args=(field, namespace))
             return cls(None, namespace, proc, field)
     
     @classmethod
     def start_process(cls, field):
         if cls.__mode == 'MP':
             namespace, manager = cls._prepare_mp_manager()
-            proc = mp.Process(target=_build_n_run_mp, args=(field, namespace))
+            proc = mp.Process(target=_build_n_run, args=(field, namespace))
             return cls(manager, namespace, proc, field)
         else:
             namespace = _NameSpacePlug()
-            proc = th.Thread(target=_build_n_run_th, args=(field, namespace))
+            proc = th.Thread(target=_build_n_run, args=(field, namespace))
             return cls(None, namespace, proc, field)
 
     @staticmethod
@@ -152,8 +151,9 @@ class Logic(object):
         ns = manager.Namespace()
         ns.ghosts = []
         ns.pacman = None
-        ns.eated_dots = []
+        ns.eated_dots = ''
         ns.user_vector = None
+        ns.stop = False
         return (ns, manager)
 
     def __init__(self, manager, namespace, proc, field):
@@ -167,10 +167,17 @@ class Logic(object):
         ns = self.namespace
         ghosts = ns.ghosts
         pacman = ns.pacman
-        dots = ns.eated_dots
+        dots = ns.eated_dots.strip()
+        if len(dots) == 0:
+            dots = []
+        else:
+            dots = [eval(dot) for dot in dots.split(' ')]
         ghosts = [(x,y,color_list[c]) for (x,y,c) in ghosts]
         return (pacman, ghosts, dots)
 
     def move_pacman(self, vector):
         print('MOVE PACMAN ', vector)
         self.namespace.user_vector = vector
+
+    def stop_game(self):
+        self.namespace.stop = True
