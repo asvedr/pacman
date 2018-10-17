@@ -8,9 +8,9 @@ EMPTY_VECTOR = (0, 0)
 PACMAN_SPEED = 4 # 0.2
 RED_SPEED = 3 # 0.3
 BLUE_SPEED = 0.5
-PINK_SPEED = 0.5
-YELLO_SPEED = 0.5
-PREY_SPEED = 0.1
+PINK_SPEED = 4
+YELLO_SPEED = 4
+PREY_SPEED = 5
 CELL_CENTER_DELTA = 0.2
 
 RED = 'red'
@@ -153,6 +153,8 @@ def pacman_algorithm(pers, logic):
     has_turn = False
     vector = normal_vector(logic.user_vector)
     point = pers.point()
+    if logic.field.data[point[1]][point[0]] == Cell.Dot:
+        logic.eat_dot(*point)
     if vector != EMPTY_VECTOR and vector != pers.vector:
         next_pt = add_p(point, vector)
         if logic.field.data[next_pt[1]][next_pt[0]] != Cell.Wall:
@@ -217,6 +219,16 @@ def red_algorithm(pers, logic):
     ghost_move(pers, logic, logic.pacman.point(), speed)
     
 
-blue_algorithm = red_algorithm
-pink_algorithm = red_algorithm
+def pink_algorithm(pers, logic):
+    speed = PINK_SPEED if pers.mode == Mode.HUNTER else PREY_SPEED
+    pac_point = logic.pacman.point()
+    pac_vector = logic.pacman.vector
+    for v_try in [4,3,2,1]:
+        pt = add_p(pac_point, mul_p(pac_vector, v_try))
+        if logic.field.data[pt[1]][pt[0]] != Cell.Wall:
+            return ghost_move(pers, logic, pt, speed)
+    ghost_move(pers, logic, pac_point, speed)
+
+
+blue_algorithm = red_algorithm    
 yello_algorithm = red_algorithm
