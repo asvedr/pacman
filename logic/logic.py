@@ -81,7 +81,7 @@ class _LogicProcess(object):
         time.sleep(SLEEP_TIME)
 
     def pacman_killed(self):
-        print('pacman killed')
+        self.namespace.pacmanlive = False
 
     def mainloop(self):
         while not self._stop_flag:
@@ -109,6 +109,7 @@ class _NameSpacePlug:
         self.eated_dots = ''
         self.user_vector = None
         self.stop = False
+        self.pacmanlive = True
 
 
 class Logic(object):
@@ -155,6 +156,7 @@ class Logic(object):
         ns.eated_dots = ''
         ns.user_vector = None
         ns.stop = False
+        ns.pacmanlive = True
         return (ns, manager)
 
     def __init__(self, manager, namespace, proc, field):
@@ -169,13 +171,14 @@ class Logic(object):
         ns = self.namespace
         ghosts = ns.ghosts
         pacman = ns.pacman
+        alive = ns.pacmanlive
         dots = ns.eated_dots.strip()
         if len(dots) == 0:
             dots = []
         else:
             dots = [eval(dot) for dot in dots.split(' ')]
         ghosts = [(x,y,color_list[c]) for (x,y,c) in ghosts]
-        return (pacman, ghosts, dots)
+        return (pacman, ghosts, dots, alive)
 
     def move_pacman(self, vector):
         print('MOVE PACMAN ', vector)
