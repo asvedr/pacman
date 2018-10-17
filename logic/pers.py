@@ -39,11 +39,20 @@ class Mode(enum.Enum):
 
 
 def mul_p(vec, val):
+    assert vec
     return (vec[0] * val, vec[1] * val)
 
 
 def add_p(a, b):
+    assert a
+    assert b
     return (a[0] + b[0], a[1] + b[1])
+
+
+def sub_p(a, b):
+    assert a
+    assert b
+    return (a[0] - b[0], a[1] - b[1])
 
 
 class Pers(object):
@@ -56,28 +65,28 @@ class Pers(object):
     
     @classmethod
     def pacman(cls, x, y):
-        pacman = cls(x, y, pacman_algorithm, None)
+        pacman = cls(x, y, pacman_algorithm, None, PACMAN_SPEED)
         pacman.vector = (0, 0)
         pacman.is_pacman = True
         return pacman
 
     @classmethod
     def red(cls, x, y):
-        return cls(x, y, red_algorithm, color_dict[RED])
+        return cls(x, y, red_algorithm, color_dict[RED], RED_SPEED)
 
     @classmethod
     def yello(cls, x, y):
-        return cls(x, y, yello_algorithm, color_dict[YELLO])
+        return cls(x, y, yello_algorithm, color_dict[YELLO], YELLO_SPEED)
 
     @classmethod
     def pink(cls, x, y):
-        return cls(x, y, pink_algorithm, color_dict[PINK])
+        return cls(x, y, pink_algorithm, color_dict[PINK], PINK_SPEED)
 
     @classmethod
     def blue(cls, x, y):
-        return cls(x, y, blue_algorithm, color_dict[BLUE])
+        return cls(x, y, blue_algorithm, color_dict[BLUE], BLUE_SPEED)
         
-    def __init__(self, x, y, algorithm, color):
+    def __init__(self, x, y, algorithm, color, speed):
         self.x = x
         self.y = y
         self.start_point = (x, y)
@@ -90,17 +99,19 @@ class Pers(object):
         self.next_point = None
         self.prev_dist = None
         self.prev_point = self.start_point
+        self.ticks_got = 0
+        self.ticks_total = speed
 
     def move(self, logic):
-        if self.ticks_got >= self.ticks_total:
-            point = self.next_point
+        if self.ticks_got >= self.ticks_total or self.next_point is None:
+            point = self.point()
             self.algorithm(self, logic)
             self.prev_point = point
             self.vector = normal_vector(sub_p(self.next_point, point))
             self.ticks_got = 0
         self.ticks_got += 1
         percent = float(self.ticks_got) / self.ticks_total
-        vec = add_p(self.next_point, mul_p(self.prev_point, -1))
+        vec = sub_p(self.next_point, self.prev_point)
         point = add_p(mul_p(vec, percent), self.prev_point)
         self.x, self.y = point
 
@@ -127,8 +138,10 @@ class Pers(object):
         return False
 
     def point(self):
-        # return (round(self.x), round(self.y))
-        return self.next_point
+        if self.next_point is None:
+            return (int(self.x), int(self.y))
+        else:
+            return self.next_point
 
     def is_on_cell_center(self):
         x = self.x
@@ -183,21 +196,16 @@ def ghost_move(pers, logic, fin_point, speed):
                 logic.pacman_killed()
             return
         next_cell = path[1]
-        vector = (next_cell[0] - ghost_point[0], next_cell[1] - ghost_point[1])
-        if pers.vector != vector:
-            pers.x = ghost_point[0]
-            pers.y = ghost_point[1]
         pers.next_point = next_cell
     else:
         ways = []
         normal = normal_vector(pers.vector)
         back_pt = None
-        x = pers.x
-        y = pers.y
+        point = pers.point()
         if normal[0] != normal[1]: # Not null vector
-            back_pt = (x - normal, y - normal[1])
-        for px, py in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
-            next_pt = (x + px, y + py)
+            back_pt = sub_p(point, normal)
+        for shift in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
+            next_pt = add_p(point, shift)
             if next_pt != back_pt:
                 ways.append(next_pt)
         way = random.choice(ways)
