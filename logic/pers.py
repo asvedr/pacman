@@ -7,7 +7,7 @@ import enum
 EMPTY_VECTOR = (0, 0)
 PACMAN_SPEED = 4 # 0.2
 RED_SPEED = 3 # 0.3
-BLUE_SPEED = 0.5
+BLUE_SPEED = 4
 PINK_SPEED = 4
 YELLO_SPEED = 4
 PREY_SPEED = 5
@@ -60,7 +60,7 @@ class Pers(object):
     __slots__ = ('x', 'y', 'color', 'algorithm',
                  'speed', 'vector', 'is_pacman', 'logger',
                  'start_point', 'mode',
-                 'next_point', 'prev_dist',
+                 '_next_point', 'prev_dist',
                  'prev_point', 'ticks_got', 'ticks_total')
     
     @classmethod
@@ -96,11 +96,19 @@ class Pers(object):
         self.is_pacman = False
         self.logger = logging.getLogger('pacman')
         self.mode = Mode.HUNTER
-        self.next_point = None
+        self._next_point = None
         self.prev_dist = None
         self.prev_point = self.start_point
         self.ticks_got = 0
         self.ticks_total = speed
+
+    @property
+    def next_point(self):
+        return self._next_point
+    
+    @next_point.setter
+    def next_point(self, val):
+        self._next_point = (int(val[0]), int(val[1]))
 
     def move(self, logic):
         if self.ticks_got >= self.ticks_total or self.next_point is None:
@@ -234,10 +242,9 @@ def pink_algorithm(pers, logic):
     ghost_move(pers, logic, pac_point, speed)
 
 
-blue_algorithm = red_algorithm    
-
 yello_out_point = None
 yello_out_point_found = False
+
 
 def yello_algorithm(pers, logic):
     global yello_out_point
@@ -246,8 +253,9 @@ def yello_algorithm(pers, logic):
         try:
             point = (1, logic.field.height - 2)
             vec = (1, -1)
+            field = logic.field.data
             while True:
-                if logic.field.data[point[1]][point[0]] == Cell.Wall:
+                if field[point[1]][point[0]] == Cell.Wall:
                     point = add_p(point, vec)
                 else:
                     yello_out_point = point
@@ -264,3 +272,34 @@ def yello_algorithm(pers, logic):
         ghost_move(pers, logic, pac_point, speed)
     else:
         ghost_move(pers, logic, yello_out_point, speed)
+
+
+def blue_algorithm(pers, logic):
+    speed = BLUE_SPEED if pers.mode == Mode.HUNTER else PREY_SPEED
+
+    red = color_dict[RED]
+    red_lst = list(filter(lambda g: g.color == red, logic.ghosts))
+    if len(red_lst) == 0:
+        return red_algorithm(pers, logic)
+    red_point = red_lst[0].point()
+    pac_point = logic.pacman.point()
+    vec = sub_p(pac_point, red_point)
+    field = logic.field.data
+    while abs(vec[0]) + abs(vec[1]) > 0:
+        pt = add_p(pac_point, vec)
+        x, y = pt
+        x = int(x)
+        y = int(y)
+        pt = (x, y)
+        try:
+            cell = field[pt[1]][pt[0]]
+        except IndexError:
+            cell = Cell.Wall
+        if cell != Cell.Wall:
+            return ghost_move(pers, logic, pt, speed)
+        else:
+            x, y = vec
+            x = 0 if x == 0 else x - (x / abs(x))
+            y = 0 if y == 0 else y - (y / abs(y))
+            vec = (x, y)
+    ghost_move(pers, logic, pac_point, speed)
