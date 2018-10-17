@@ -8,6 +8,7 @@ import logging
 
 
 SLEEP_TIME = 0.1
+BEFORE_START = SLEEP_TIME * 5
 
 class _LogicProcess(object):
     
@@ -158,6 +159,7 @@ class Logic(object):
 
     def __init__(self, manager, namespace, proc, field):
         proc.start()
+        time.sleep(BEFORE_START)
         self.manager = manager
         self.namespace = namespace
         self.proc = proc

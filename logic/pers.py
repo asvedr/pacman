@@ -225,10 +225,42 @@ def pink_algorithm(pers, logic):
     pac_vector = logic.pacman.vector
     for v_try in [4,3,2,1]:
         pt = add_p(pac_point, mul_p(pac_vector, v_try))
-        if logic.field.data[pt[1]][pt[0]] != Cell.Wall:
+        try:
+            cell = logic.field.data[pt[1]][pt[0]]
+        except IndexError:
+            cell = Cell.Wall
+        if cell != Cell.Wall:
             return ghost_move(pers, logic, pt, speed)
     ghost_move(pers, logic, pac_point, speed)
 
 
 blue_algorithm = red_algorithm    
-yello_algorithm = red_algorithm
+
+yello_out_point = None
+yello_out_point_found = False
+
+def yello_algorithm(pers, logic):
+    global yello_out_point
+    global yello_out_point_found
+    if not yello_out_point_found:
+        try:
+            point = (1, logic.field.height - 2)
+            vec = (1, -1)
+            while True:
+                if logic.field.data[point[1]][point[0]] == Cell.Wall:
+                    point = add_p(point, vec)
+                else:
+                    yello_out_point = point
+                    break
+        except IndexError:
+            yello_out_point = None
+        yello_out_point_found = True
+
+    speed = YELLO_SPEED if pers.mode == Mode.HUNTER else PREY_SPEED
+
+    pac_point = logic.pacman.point()
+    path_to_pac = find_path(logic.field.data, [], pac_point, pers.point())
+    if len(path_to_pac) > 8 or yello_out_point is None:
+        ghost_move(pers, logic, pac_point, speed)
+    else:
+        ghost_move(pers, logic, yello_out_point, speed)
