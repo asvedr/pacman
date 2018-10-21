@@ -45,11 +45,11 @@ def dynamic(c,info):
 	for dot in dots:
 		c.delete(del_dots[dot])
 		if ((count-len(dots))==0):
-			#print(len(dots))
 			logic.stop_game()
-			#c.create_rectangle(200,350,600,450,fill="orange")
+			c.create_text(380,350,fill="cyan",font="Purisa 50 bold",text="You win!")
 			c.create_text(380,400,fill="magenta",font="Purisa 50 bold",text="You win!")
-    #if logic.
+			c.create_text(380,450,fill="red",font="Purisa 50 bold",text="You win!")
+    		
 
 def control(logic, event):
 	if event.char=='w':
@@ -85,7 +85,7 @@ if __name__ == '__main__':
 		dynamic(c, info)
 		if not info[-1]:
 			logic.stop_game()
-			c.create_text(380,400,fill="maroon",font="Purisa 50 bold",text="You lose!")
+			c.create_text(380,400,fill="maroon",font="Purisa 50 bold",text="GAME OVER!\n   You lose!")
 		else:	
 			root.after(250, dyn)
 	
