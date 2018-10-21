@@ -1,7 +1,7 @@
 import enum
 from functools import reduce
 import os, sys
-path=os.path.abspath('d/Pacman_Repo/pacman/gui.py')  
+path=os.path.abspath('d/Pacman_Repo/pacman/world.txt')  
 
 	 
 class Cell(enum.Enum):
